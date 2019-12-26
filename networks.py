@@ -37,26 +37,26 @@ class GPPatchMcResDis(nn.Module):
     def __init__(self, hp):
         super(GPPatchMcResDis, self).__init__()
         assert hp['n_res_blks'] % 2 == 0, 'n_res_blk must be multiples of 2'
-        self.n_layers = hp['n_res_blks'] // 2
-        nf = hp['nf']
+        self.n_layers = hp['n_res_blks'] // 2 # 5
+        nf = hp['nf'] # 64
         cnn_f = [Conv2dBlock(3, nf, 7, 1, 3,
                              pad_type='reflect',
                              norm='none',
-                             activation='none')]
+                             activation='none')] # 第一个卷积层提取特征，输出batchsize*128*128*64维度向量
         for i in range(self.n_layers - 1):
-            nf_out = np.min([nf * 2, 1024])
+            nf_out = np.min([nf * 2, 1024]) # 128->256->512->1024
             cnn_f += [ActFirstResBlock(nf, nf, None, 'lrelu', 'none')]
             cnn_f += [ActFirstResBlock(nf, nf_out, None, 'lrelu', 'none')]
             cnn_f += [nn.ReflectionPad2d(1)]
             cnn_f += [nn.AvgPool2d(kernel_size=3, stride=2)]
-            nf = np.min([nf * 2, 1024])
-        nf_out = np.min([nf * 2, 1024])
+            nf = np.min([nf * 2, 1024]) # 128->256->512->1024
+        nf_out = np.min([nf * 2, 1024]) # 1024
         cnn_f += [ActFirstResBlock(nf, nf, None, 'lrelu', 'none')]
-        cnn_f += [ActFirstResBlock(nf, nf_out, None, 'lrelu', 'none')]
+        cnn_f += [ActFirstResBlock(nf, nf_out, None, 'lrelu', 'none')] # 再经过两个ResBlock,得到1024深度
         cnn_c = [Conv2dBlock(nf_out, hp['num_classes'], 1, 1,
                              norm='none',
                              activation='lrelu',
-                             activation_first=True)]
+                             activation_first=True)] # 最后再经过一个卷积层得到各个种类的概率：输出batchsize*patch*patch*num_class的四维向量
         self.cnn_f = nn.Sequential(*cnn_f)
         self.cnn_c = nn.Sequential(*cnn_c)
 
@@ -64,15 +64,15 @@ class GPPatchMcResDis(nn.Module):
         assert(x.size(0) == y.size(0))
         feat = self.cnn_f(x)
         out = self.cnn_c(feat)
-        index = torch.LongTensor(range(out.size(0))).cuda()
-        out = out[index, y, :, :]
-        return out, feat
+        index = torch.LongTensor(range(out.size(0))).cuda() 
+        out = out[index, y, :, :] # 为什么不写作out=out[:,y,:,:]???,因为这样写不会降维度
+        return out, feat # 最终out为一个三维的向量，batchsize*patch*patch ，内容为在各自lable上面的得分值
 
     def calc_dis_fake_loss(self, input_fake, input_label):
         resp_fake, gan_feat = self.forward(input_fake, input_label)
         total_count = torch.tensor(np.prod(resp_fake.size()),
                                    dtype=torch.float).cuda()
-        fake_loss = torch.nn.ReLU()(1.0 + resp_fake).mean()
+        fake_loss = torch.nn.ReLU()(1.0 + resp_fake).mean() # 同样也没有加LOG
         correct_count = (resp_fake < 0).sum()
         fake_accuracy = correct_count.type_as(fake_loss) / total_count
         return fake_loss, fake_accuracy, resp_fake
@@ -80,10 +80,10 @@ class GPPatchMcResDis(nn.Module):
     def calc_dis_real_loss(self, input_real, input_label):
         resp_real, gan_feat = self.forward(input_real, input_label)
         total_count = torch.tensor(np.prod(resp_real.size()),
-                                   dtype=torch.float).cuda()
-        real_loss = torch.nn.ReLU()(1.0 - resp_real).mean()
-        correct_count = (resp_real >= 0).sum()
-        real_accuracy = correct_count.type_as(real_loss) / total_count
+                                   dtype=torch.float).cuda() # 计算输出概率分数的总数目
+        real_loss = torch.nn.ReLU()(1.0 - resp_real).mean() # 求（1-概率）的平均值当作loss，并没有计算LOG
+        correct_count = (resp_real >= 0).sum() # 计算所有判断正确的概率个数之和
+        real_accuracy = correct_count.type_as(real_loss) / total_count #所有概率求和除以总数得到准确率
         return real_loss, real_accuracy, resp_real
 
     def calc_gen_loss(self, input_fake, input_fake_label):
@@ -152,7 +152,7 @@ class FewShotGen(nn.Module):
     def forward(self, one_image, model_set):
         # reconstruct an image
         content, model_codes = self.encode(one_image, model_set)
-        model_code = torch.mean(model_codes, dim=0).unsqueeze(0)
+        model_code = torch.mean(model_codes, dim=0).unsqueeze(0) # 均值处理
         images_trans = self.decode(content, model_code)
         return images_trans
 
@@ -161,7 +161,7 @@ class FewShotGen(nn.Module):
         content = self.enc_content(one_image)
         # extract model code from the images in the model set
         class_codes = self.enc_class_model(model_set)
-        class_code = torch.mean(class_codes, dim=0).unsqueeze(0)
+        class_code = torch.mean(class_codes, dim=0).unsqueeze(0) # 均值处理
         return content, class_code
 
     def decode(self, content, model_code):
@@ -184,15 +184,15 @@ class ClassModelEncoder(nn.Module):
             self.model += [Conv2dBlock(dim, 2 * dim, 4, 2, 1,
                                        norm=norm,
                                        activation=activ,
-                                       pad_type=pad_type)]
+                                       pad_type=pad_type)] # 注意：stride为2，故降采样了
             dim *= 2
         for i in range(downs - 2):
             self.model += [Conv2dBlock(dim, dim, 4, 2, 1,
                                        norm=norm,
                                        activation=activ,
                                        pad_type=pad_type)]
-        self.model += [nn.AdaptiveAvgPool2d(1)]
-        self.model += [nn.Conv2d(dim, latent_dim, 1, 1, 0)]
+        self.model += [nn.AdaptiveAvgPool2d(1)] # avg-pooling层
+        self.model += [nn.Conv2d(dim, latent_dim, 1, 1, 0)] # 使用1*1的kernel卷积
         self.model = nn.Sequential(*self.model)
         self.output_dim = dim
 

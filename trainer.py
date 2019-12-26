@@ -27,20 +27,27 @@ def update_average(model_tgt, model_src, beta=0.999):
 class Trainer(nn.Module):
     def __init__(self, cfg):
         super(Trainer, self).__init__()
+        #整体的模型FUNIT实例化，FUNIT包括判别器网络和生成器网络
         self.model = FUNITModel(cfg)
+        #learning rate
         lr_gen = cfg['lr_gen']
         lr_dis = cfg['lr_dis']
+        #网络参数
         dis_params = list(self.model.dis.parameters())
         gen_params = list(self.model.gen.parameters())
+        #判别器和生成器的优化函数
         self.dis_opt = torch.optim.RMSprop(
             [p for p in dis_params if p.requires_grad],
             lr=lr_gen, weight_decay=cfg['weight_decay'])
         self.gen_opt = torch.optim.RMSprop(
             [p for p in gen_params if p.requires_grad],
             lr=lr_dis, weight_decay=cfg['weight_decay'])
+        #调度器，返回NONE
         self.dis_scheduler = get_scheduler(self.dis_opt, cfg)
         self.gen_scheduler = get_scheduler(self.gen_opt, cfg)
+        #参数初始化
         self.apply(weights_init(cfg['init']))
+        #一开始初始化的genorater
         self.model.gen_test = copy.deepcopy(self.model.gen)
 
     def gen_update(self, co_data, cl_data, hp, multigpus):
@@ -52,10 +59,10 @@ class Trainer(nn.Module):
         self.loss_gen_recon_s = torch.mean(sr)
         self.loss_gen_adv = torch.mean(ad)
         self.accuracy_gen_adv = torch.mean(ac)
-        self.gen_opt.step()
+        self.gen_opt.step() # 网络权重参数更新
         this_model = self.model.module if multigpus else self.model
-        update_average(this_model.gen_test, this_model.gen)
-        return self.accuracy_gen_adv.item()
+        update_average(this_model.gen_test, this_model.gen)# 对gen_test中的权重进行一个缓慢更新，有啥用？？
+        return self.accuracy_gen_adv.item(),self.loss_gen_total.item()
 
     def dis_update(self, co_data, cl_data, hp):
         self.dis_opt.zero_grad()
@@ -66,7 +73,7 @@ class Trainer(nn.Module):
         self.loss_dis_reg = torch.mean(reg)
         self.accuracy_dis_adv = torch.mean(acc)
         self.dis_opt.step()
-        return self.accuracy_dis_adv.item()
+        return self.accuracy_dis_adv.item(),self.loss_dis_total.item()
 
     def test(self, co_data, cl_data, multigpus):
         this_model = self.model.module if multigpus else self.model

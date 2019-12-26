@@ -22,7 +22,7 @@ cudnn.benchmark = True
 parser = argparse.ArgumentParser()
 parser.add_argument('--config',
                     type=str,
-                    default='configs/funit_animals.yaml',
+                    default='configs/funit_human2anime.yaml',
                     help='configuration file for training and testing')
 parser.add_argument('--output_path',
                     type=str,
@@ -58,7 +58,7 @@ if opts.multigpus:
 else:
     config['gpus'] = 1
 
-loaders = get_train_loaders(config)
+loaders = get_train_loaders(config) # get　datasets
 train_content_loader = loaders[0]
 train_class_loader = loaders[1]
 test_content_loader = loaders[2]
@@ -70,7 +70,7 @@ train_writer = SummaryWriter(
     os.path.join(opts.output_path + "/logs", model_name))
 output_directory = os.path.join(opts.output_path + "/outputs", model_name)
 checkpoint_directory, image_directory = make_result_folders(output_directory)
-shutil.copy(opts.config, os.path.join(output_directory, 'config.yaml'))
+shutil.copy(opts.config, os.path.join(output_directory, 'config.yaml'))# 配置文件拷贝
 
 iterations = trainer.resume(checkpoint_directory,
                             hp=config,
@@ -80,11 +80,12 @@ while True:
     for it, (co_data, cl_data) in enumerate(
             zip(train_content_loader, train_class_loader)):
         with Timer("Elapsed time in update: %f"):
-            d_acc = trainer.dis_update(co_data, cl_data, config)
-            g_acc = trainer.gen_update(co_data, cl_data, config,
+            d_acc,d_loss = trainer.dis_update(co_data, cl_data, config)
+            g_acc,g_loss = trainer.gen_update(co_data, cl_data, config,
                                        opts.multigpus)
             torch.cuda.synchronize()
             print('D acc: %.4f\t G acc: %.4f' % (d_acc, g_acc))
+            print('D loss: %.2f\t G loss: %.2f' % (d_loss, g_loss))
 
         if (iterations + 1) % config['log_iter'] == 0:
             print("Iteration: %08d/%08d" % (iterations + 1, max_iter))

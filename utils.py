@@ -47,9 +47,9 @@ def loader_from_list(
                          transform_list if crop else transform_list
     transform_list = [transforms.Resize(new_size)] + transform_list \
         if new_size is not None else transform_list
-    if not center_crop:
+    if not center_crop: # 以一定概率水平翻转
         transform_list = [transforms.RandomHorizontalFlip()] + transform_list
-    transform = transforms.Compose(transform_list)
+    transform = transforms.Compose(transform_list) # 得到transform组合体
     dataset = ImageLabelFilelist(root,
                                  file_list,
                                  transform,
@@ -105,8 +105,8 @@ def get_train_loaders(conf):
     width = conf['crop_image_width']
     height = conf['crop_image_height']
     train_content_loader = loader_from_list(
-            root=conf['data_folder_train'],
-            file_list=conf['data_list_train'],
+            root='./datasets/content/train',
+            file_list=conf['data_list_content_train'],
             batch_size=batch_size,
             new_size=new_size,
             height=height,
@@ -114,8 +114,8 @@ def get_train_loaders(conf):
             crop=True,
             num_workers=num_workers)
     train_class_loader = loader_from_list(
-            root=conf['data_folder_train'],
-            file_list=conf['data_list_train'],
+            root='./datasets/class/train',
+            file_list=conf['data_list_class_train'],
             batch_size=batch_size,
             new_size=new_size,
             height=height,
@@ -123,8 +123,8 @@ def get_train_loaders(conf):
             crop=True,
             num_workers=num_workers)
     test_content_loader = loader_from_list(
-            root=conf['data_folder_test'],
-            file_list=conf['data_list_test'],
+            root='./datasets/content/test',
+            file_list=conf['data_list_content_test'],
             batch_size=batch_size,
             new_size=new_size,
             height=height,
@@ -132,8 +132,8 @@ def get_train_loaders(conf):
             crop=True,
             num_workers=1)
     test_class_loader = loader_from_list(
-            root=conf['data_folder_test'],
-            file_list=conf['data_list_test'],
+            root='./datasets/class/test',
+            file_list=conf['data_list_class_test'],
             batch_size=batch_size,
             new_size=new_size,
             height=height,

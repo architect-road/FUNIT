@@ -23,10 +23,10 @@ parser.add_argument('--config',
                     default='configs/funit_animals.yaml')
 parser.add_argument('--ckpt',
                     type=str,
-                    default='pretrained/animal119_gen_00200000.pt')
+                    default='pretrained/animal119_gen_00100000.pt')
 parser.add_argument('--class_image_folder',
                     type=str,
-                    default='images/n02138411')
+                    default='images/lijing_crop')
 parser.add_argument('--input',
                     type=str,
                     default='images/input_content.jpg')

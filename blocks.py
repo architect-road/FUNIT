@@ -89,9 +89,9 @@ class LinearBlock(nn.Module):
 
         # initialize activation
         if activation == 'relu':
-            self.activation = nn.ReLU(inplace=True)
+            self.activation = nn.ReLU(inplace=False)
         elif activation == 'lrelu':
-            self.activation = nn.LeakyReLU(0.2, inplace=True)
+            self.activation = nn.LeakyReLU(0.2, inplace=False)
         elif activation == 'tanh':
             self.activation = nn.Tanh()
         elif activation == 'none':
@@ -140,9 +140,9 @@ class Conv2dBlock(nn.Module):
 
         # initialize activation
         if activation == 'relu':
-            self.activation = nn.ReLU(inplace=True)
+            self.activation = nn.ReLU(inplace=False)
         elif activation == 'lrelu':
-            self.activation = nn.LeakyReLU(0.2, inplace=True)
+            self.activation = nn.LeakyReLU(0.2, inplace=False)
         elif activation == 'tanh':
             self.activation = nn.Tanh()
         elif activation == 'none':
@@ -153,7 +153,7 @@ class Conv2dBlock(nn.Module):
         self.conv = nn.Conv2d(in_dim, out_dim, ks, st, bias=self.use_bias)
 
     def forward(self, x):
-        if self.activation_first:
+        if self.activation_first: # 先进激活函数再经过卷积层
             if self.activation:
                 x = self.activation(x)
             x = self.conv(self.pad(x))
