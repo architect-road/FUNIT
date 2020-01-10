@@ -105,8 +105,8 @@ def get_train_loaders(conf):
     width = conf['crop_image_width']
     height = conf['crop_image_height']
     train_content_loader = loader_from_list(
-            root='./datasets/content/train',
-            file_list=conf['data_list_content_train'],
+            root='./datasets/train',
+            file_list=conf['data_list_train'],
             batch_size=batch_size,
             new_size=new_size,
             height=height,
@@ -114,8 +114,8 @@ def get_train_loaders(conf):
             crop=True,
             num_workers=num_workers)
     train_class_loader = loader_from_list(
-            root='./datasets/class/train',
-            file_list=conf['data_list_class_train'],
+            root='./datasets/train',
+            file_list=conf['data_list_train'],
             batch_size=batch_size,
             new_size=new_size,
             height=height,
@@ -123,8 +123,8 @@ def get_train_loaders(conf):
             crop=True,
             num_workers=num_workers)
     test_content_loader = loader_from_list(
-            root='./datasets/content/test',
-            file_list=conf['data_list_content_test'],
+            root='./datasets/test',
+            file_list=conf['data_list_test'],
             batch_size=batch_size,
             new_size=new_size,
             height=height,
@@ -132,8 +132,8 @@ def get_train_loaders(conf):
             crop=True,
             num_workers=1)
     test_class_loader = loader_from_list(
-            root='./datasets/class/test',
-            file_list=conf['data_list_class_test'],
+            root='./datasets/test',
+            file_list=conf['data_list_test'],
             batch_size=batch_size,
             new_size=new_size,
             height=height,

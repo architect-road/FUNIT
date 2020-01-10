@@ -24,46 +24,26 @@ def readFilename(path, allfile):
  
  
 if __name__ == '__main__':
-    path_class_train="datasets/class/train"
-    path_class_test="datasets/class/test"
-    path_content_train="datasets/content/train"
-    path_content_test="datasets/content/test"
+    path_train="datasets/train"
+    path_test="datasets/test"
 
-    txtpath_class_train="datasets/human_train_class.txt"
-    txtpath_class_test="datasets/human_test_class.txt"
-    txtpath_content_train="datasets/human_train_content.txt"
-    txtpath_content_test="datasets/human_test_content.txt"
+    txtpath_train="datasets/human_train.txt"
+    txtpath_test="datasets/human_test.txt"
 
-    allfile_class_test = []
-    allfile_class_train = []
-    allfile_content_test = []
-    allfile_content_train = []
+    allfile_test = []
+    allfile_train = []
 
-    allfile_class_train=readFilename(path_class_train,allfile_class_train)
-    allfile_class_test=readFilename(path_class_test,allfile_class_test)
-    allfile_content_train=readFilename(path_content_train,allfile_content_train)
-    allfile_content_test=readFilename(path_content_test,allfile_content_test)
+    allfile_train = readFilename(path_train,allfile_train)
+    allfile_test = readFilename(path_test,allfile_test)
 
-    with open(txtpath_class_train,'a+') as fp:
-        for name in allfile_class_train:
+    with open(txtpath_train,'a+') as fp:
+        for name in allfile_train:
             name_seq = name.split('/')
             write_name = os.path.join(name_seq[-2] , name_seq[-1])
             fp.write("".join(write_name)+"\n")
     
-    with open(txtpath_class_test,'a+') as fp:
-        for name in allfile_class_test:
+    with open(txtpath_test,'a+') as fp:
+        for name in allfile_test:
             name_seq = name.split('/')
             write_name = os.path.join(name_seq[-2] , name_seq[-1])
-            fp.write("".join(write_name)+"\n")
-    
-    with open(txtpath_content_train,'a+') as fp:
-        for name in allfile_content_train:
-            name_seq = name.split('/')
-            write_name = os.path.join(name_seq[-2] , name_seq[-1])
-            fp.write("".join(write_name)+"\n")
-
-    with open(txtpath_content_test,'a+') as fp:
-        for name in allfile_content_test:
-            name_seq = name.split('/')
-            write_name = os.path.join(name_seq[-2], name_seq[-1])
             fp.write("".join(write_name)+"\n")

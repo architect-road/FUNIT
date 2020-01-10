@@ -30,7 +30,7 @@ gen:
 dis:
   nf: 64                      # base number of filters
   n_res_blks: 10              # number of residual blocks in the discriminator
-  num_classes: 8            # number of classes in the training set
+  num_classes: 20            # number of classes in the training set
 
 # data options
 num_workers: 4
@@ -39,7 +39,5 @@ new_size: 140                 # first resize the shortest image side to this siz
 crop_image_height: 128        # random crop image of this height
 crop_image_width: 128         # random crop image of this width
 
-data_list_class_train: ./datasets/human_train_class.txt
-data_list_class_test: ./datasets/human_test_class.txt
-data_list_content_train: ./datasets/human_train_content.txt
-data_list_content_test: ./datasets/human_test_content.txt
+data_list_train: ./datasets/human_train.txt
+data_list_test: ./datasets/human_test.txt
