@@ -16,11 +16,11 @@ lr_dis: 0.0001                # learning rate for the discriminator
 init: kaiming                 # initialization [gaussian/kaiming/xavier/orthogonal]
 gan_w: 1                      # weight of adversarial loss for image translation
 fm_w: 1                       # weight on distance between gan features of style and translated image
-r_w: 1                   # weight of image reconstruction loss
+r_w: 10                       # weight of image reconstruction loss
 c_w: 1                        # weight of content loss 
 
 # model options
-gen:
+gen_a:
   nf: 64                      # number of base filters in the generator
   n_res_blks: 2               # number of residual blocks in content encoder/decoder
   nf_mlp: 256                 # number of base filters in MLP module
@@ -28,24 +28,37 @@ gen:
   n_mlp_blks: 3               # number of mlp blocks
   n_downs_content: 3          # number of downsampling layers in content encoder
   n_downs_class: 4            # number of downsampling layers in class model encoder
-dis:
+gen_b:
+  nf: 64                      # number of base filters in the generator
+  n_res_blks: 2               # number of residual blocks in content encoder/decoder
+  nf_mlp: 256                 # number of base filters in MLP module
+  latent_dim: 64              # dimension of the latent code for the class model
+  n_mlp_blks: 3               # number of mlp blocks
+  n_downs_content: 3          # number of downsampling layers in content encoder
+  n_downs_class: 4            # number of downsampling layers in class model encoder
+dis_a:
   nf: 64                      # base number of filters
   n_res_blks: 10              # number of residual blocks in the discriminator
-  num_classes: 20            # number of classes in the training set
+  num_classes: 12             # number of classes in the training A set
+dis_b:
+  nf: 64                      # base number of filters
+  n_res_blks: 10              # number of residual blocks in the discriminator
+  num_classes: 8             # number of classes in the training B set
+
 
 # data options
 num_workers: 4
-batch_size: 64
+batch_size: 4
 new_size: 140                 # first resize the shortest image side to this size
 crop_image_height: 128        # random crop image of this height
 crop_image_width: 128         # random crop image of this width
 
-root_class_train: ../FUNIT0/datasets/class/train
-root_content_train: ../FUNIT0/datasets/content/train
-root_class_test: ../FUNIT0/datasets/class/test
-root_content_test: ../FUNIT0/datasets/content/test
+root_class_train: /data0/chenyinpeng/FUNIT_data/class/train
+root_content_train: /data0/chenyinpeng/FUNIT_data/content/train
+root_class_test: /data0/chenyinpeng/FUNIT_data/class/test
+root_content_test: /data0/chenyinpeng/FUNIT_data/content/test
 
-data_list_class_train: ../FUNIT0/datasets/human_train_class.txt
-data_list_class_test: ../FUNIT0/datasets/human_test_class.txt
-data_list_content_train: ../FUNIT0/datasets/human_train_content.txt
-data_list_content_test: ../FUNIT0/datasets/human_test_content.txt
+data_list_class_train: /data0/chenyinpeng/FUNIT_data/human_train_class.txt
+data_list_class_test: /data0/chenyinpeng/FUNIT_data/human_test_class.txt
+data_list_content_train: /data0/chenyinpeng/FUNIT_data/human_train_content.txt
+data_list_content_test: /data0/chenyinpeng/FUNIT_data/human_test_content.txt

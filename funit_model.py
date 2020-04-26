@@ -18,10 +18,10 @@ def recon_criterion(predict, target):
 class FUNITModel(nn.Module):
     def __init__(self, hp):
         super(FUNITModel, self).__init__()
-        self.gen_a = FewShotGen(hp['gen']) # human domain Generator
-        self.gen_b = FewShotGen(hp['gen']) # anime domain Generator
-        self.dis_a = GPPatchMcResDis(hp['dis']) # human domain Discriminator
-        self.dis_b = GPPatchMcResDis(hp['dis']) # anime domain Discriminator        
+        self.gen_a = FewShotGen(hp['gen_a']) # human domain Generator
+        self.gen_b = FewShotGen(hp['gen_b']) # anime domain Generator
+        self.dis_a = GPPatchMcResDis(hp['dis_a']) # human domain Discriminator
+        self.dis_b = GPPatchMcResDis(hp['dis_b']) # anime domain Discriminator        
 
         self.gen_test_a = copy.deepcopy(self.gen_a)
         self.gen_test_b = copy.deepcopy(self.gen_b)
@@ -75,6 +75,7 @@ class FUNITModel(nn.Module):
             total_loss = hp['gan_w'] * gan_loss + hp['r_w'] * rec_loss + hp['fm_w'] * feat_loss + hp['c_w'] * content_loss
             total_loss.backward()
             acc = 0.5 * (xt_a2b_gan_acc + xt_b2a_gan_acc) # the accuracy of fake image recognition
+            print("gen:[gan_loss:%.2f" % gan_loss.item(),"feat_loss:%.2f" % feat_loss.item(),"rec_loss:%.2f" % rec_loss.item(),"content_loss:%.2f]" % content_loss.item())
             return total_loss, gan_loss, feat_loss, rec_loss, content_loss, acc
         elif mode == 'dis_update':
             xb.requires_grad_()
@@ -82,12 +83,12 @@ class FUNITModel(nn.Module):
             # real loss
             dis_a_real_loss, dis_a_real_acc, dis_a_real_resp = self.dis_a.calc_dis_real_loss(xa, la)
             dis_b_real_loss, dis_b_real_acc, dis_b_real_resp = self.dis_b.calc_dis_real_loss(xb, lb)
-            real_loss = hp['gan_w'] * (dis_a_real_loss + dis_b_real_loss)
+            real_loss = hp['gan_w'] * (dis_a_real_loss + dis_b_real_loss) * 0.5
             real_loss.backward(retain_graph=True)
             # reg loss
             dis_a_reg_loss = self.dis_a.calc_grad2(dis_a_real_resp, xa)
             dis_b_reg_loss = self.dis_b.calc_grad2(dis_b_real_resp, xb)
-            reg_loss = 10 * (dis_a_reg_loss + dis_a_reg_loss)
+            reg_loss = 10 * (dis_a_reg_loss + dis_a_reg_loss) * 0.5
             reg_loss.backward()
             # fake loss
             with torch.no_grad():
@@ -99,20 +100,21 @@ class FUNITModel(nn.Module):
                 xt_b2a = self.gen_a.decode(c_xb, s_xa)
             dis_a_fake_loss, dis_a_fake_acc, dis_a_fake_resp = self.dis_a.calc_dis_fake_loss(xt_b2a.detach(), la) 
             dis_b_fake_loss, dis_b_fake_acc, dis_b_fake_resp = self.dis_b.calc_dis_fake_loss(xt_a2b.detach(), lb) # detach to cut the backward func to G net
-            fake_loss = hp['gan_w'] * (dis_a_fake_loss + dis_b_fake_loss)
+            fake_loss = hp['gan_w'] * (dis_a_fake_loss + dis_b_fake_loss) * 0.5
             fake_loss.backward()
             total_loss = fake_loss + real_loss + reg_loss
             acc = 0.25 * (dis_a_fake_acc + dis_b_fake_acc + dis_a_real_acc + dis_b_real_acc)
+            print("Dis:[fake_loss:%.2f" % fake_loss.item(),"real_loss:%.2f" % real_loss.item(),"reg_loss:%.2f]" % reg_loss.item())
             return total_loss, fake_loss, real_loss, reg_loss, acc
         else:
             assert 0, 'Not support operation'
 
     def test(self, co_data, cl_data):
         self.eval()
-        # self.gen_a.eval()
-        # self.gen_b.eval()
-        # self.gen_test_a.eval()
-        # self.gen_test_b.eval()
+        self.gen_a.eval()
+        self.gen_b.eval()
+        self.gen_test_a.eval()
+        self.gen_test_b.eval()
         xa = co_data[0].cuda()
         xb = cl_data[0].cuda()
 
