@@ -16,7 +16,7 @@ lr_dis: 0.0001                # learning rate for the discriminator
 init: kaiming                 # initialization [gaussian/kaiming/xavier/orthogonal]
 gan_w: 1                      # weight of adversarial loss for image translation
 fm_w: 1                       # weight on distance between gan features of style and translated image
-r_w: 1                       # weight of image reconstruction loss
+r_w: 10                       # weight of image reconstruction loss
 c_w: 1                        # weight of content loss 
 
 # model options
@@ -53,12 +53,12 @@ new_size: 140                 # first resize the shortest image side to this siz
 crop_image_height: 128        # random crop image of this height
 crop_image_width: 128         # random crop image of this width
 
-root_class_train: /data0/chenyinpeng/FUNIT_data/class/train
-root_content_train: /data0/chenyinpeng/FUNIT_data/content/train
-root_class_test: /data0/chenyinpeng/FUNIT_data/class/test
-root_content_test: /data0/chenyinpeng/FUNIT_data/content/test
+root_class_train: /data1/chenyinpeng/data/human_nezha_sep/class/train
+root_content_train: /data1/chenyinpeng/data/human_nezha_sep/content/train
+root_class_test: /data1/chenyinpeng/data/human_nezha_sep/class/test
+root_content_test: /data1/chenyinpeng/data/human_nezha_sep/content/test
 
-data_list_class_train: /data0/chenyinpeng/FUNIT_data/human_train_class.txt
-data_list_class_test: /data0/chenyinpeng/FUNIT_data/human_test_class.txt
-data_list_content_train: /data0/chenyinpeng/FUNIT_data/human_train_content.txt
-data_list_content_test: /data0/chenyinpeng/FUNIT_data/human_test_content.txt
+data_list_class_train: /data1/chenyinpeng/data/human_nezha_sep/train_class.txt
+data_list_class_test: /data1/chenyinpeng/data/human_nezha_sep/test_class.txt
+data_list_content_train: /data1/chenyinpeng/data/human_nezha_sep/train_content.txt
+data_list_content_test: /data1/chenyinpeng/data/human_nezha_sep/test_content.txt

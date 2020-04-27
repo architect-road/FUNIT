@@ -53,8 +53,8 @@ class FUNITModel(nn.Module):
             xt_b2a_gan_loss, xt_b2a_gan_acc, xt_b2a_gan_feat = self.dis_a.calc_gan_loss(xt_b2a, la)
             xr_a_gan_loss, xr_a_gan_acc, xr_a_gan_feat = self.dis_a.calc_gan_loss(xr_a, la)
             xr_b_gan_loss, xr_b_gan_acc, xr_b_gan_feat = self.dis_b.calc_gan_loss(xr_b, lb)
-            # gan_loss = (xt_a2b_gan_loss + xt_b2a_gan_loss)
-            gan_loss = (xt_a2b_gan_loss + xt_b2a_gan_loss + xr_a_gan_loss + xr_b_gan_loss)
+            gan_loss = (xt_a2b_gan_loss + xt_b2a_gan_loss)
+            # gan_loss = (xt_a2b_gan_loss + xt_b2a_gan_loss + xr_a_gan_loss + xr_b_gan_loss)
             # feature loss
             _, xb_gan_feat = self.dis_b(xb, lb)
             _, xa_gan_feat = self.dis_a(xa, la)
