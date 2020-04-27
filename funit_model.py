@@ -53,8 +53,8 @@ class FUNITModel(nn.Module):
             xt_b2a_gan_loss, xt_b2a_gan_acc, xt_b2a_gan_feat = self.dis_a.calc_gan_loss(xt_b2a, la)
             xr_a_gan_loss, xr_a_gan_acc, xr_a_gan_feat = self.dis_a.calc_gan_loss(xr_a, la)
             xr_b_gan_loss, xr_b_gan_acc, xr_b_gan_feat = self.dis_b.calc_gan_loss(xr_b, lb)
-            gan_loss = (xt_a2b_gan_loss + xt_b2a_gan_loss) * 0.5
-            # gan_loss = (xt_a2b_gan_loss + xt_b2a_gan_loss + xr_a_gan_loss + xr_b_gan_loss) * 0.25
+            # gan_loss = (xt_a2b_gan_loss + xt_b2a_gan_loss)
+            gan_loss = (xt_a2b_gan_loss + xt_b2a_gan_loss + xr_a_gan_loss + xr_b_gan_loss)
             # feature loss
             _, xb_gan_feat = self.dis_b(xb, lb)
             _, xa_gan_feat = self.dis_a(xa, la)
@@ -62,59 +62,65 @@ class FUNITModel(nn.Module):
                 recon_criterion(xr_b_gan_feat.mean(3).mean(2),xb_gan_feat.mean(3).mean(2))
             xt_feat_loss = recon_criterion(xt_b2a_gan_feat.mean(3).mean(2),xa_gan_feat.mean(3).mean(2)) + \
                 recon_criterion(xt_a2b_gan_feat.mean(3).mean(2),xb_gan_feat.mean(3).mean(2))
-            feat_loss = (xr_feat_loss + xt_feat_loss) * 0.5
+            feat_loss = (xr_feat_loss + xt_feat_loss)
             # reconstruction loss
             xa_rec_loss = recon_criterion(xr_a, xa)
             xb_rec_loss = recon_criterion(xr_b, xb)
-            rec_loss = (xa_rec_loss + xb_rec_loss) * 0.5
+            rec_loss = (xa_rec_loss + xb_rec_loss)
             # content loss
             content_a2b_loss = recon_criterion(c_xa,c_xt_a2b)
             content_b2a_loss = recon_criterion(c_xb,c_xt_b2a)
-            content_loss = (content_a2b_loss + content_b2a_loss) * 0.5
+            content_loss = (content_a2b_loss + content_b2a_loss)
             # total loss
             total_loss = hp['gan_w'] * gan_loss + hp['r_w'] * rec_loss + hp['fm_w'] * feat_loss + hp['c_w'] * content_loss
             total_loss.backward()
             acc = 0.5 * (xt_a2b_gan_acc + xt_b2a_gan_acc) # the accuracy of fake image recognition
-            print("gen:[gan_loss:%.2f" % gan_loss.item(),"feat_loss:%.2f" % feat_loss.item(),"rec_loss:%.2f" % rec_loss.item(),"content_loss:%.2f]" % content_loss.item())
+            # print("gen:[gan_loss:%.2f" % gan_loss.item(),"feat_loss:%.2f" % feat_loss.item(),"rec_loss:%.2f" % rec_loss.item(),"content_loss:%.2f]" % content_loss.item())
             return total_loss, gan_loss, feat_loss, rec_loss, content_loss, acc
         elif mode == 'dis_update':
             xb.requires_grad_()
             xa.requires_grad_()
-            # real loss
-            dis_a_real_loss, dis_a_real_acc, dis_a_real_resp = self.dis_a.calc_dis_real_loss(xa, la)
-            dis_b_real_loss, dis_b_real_acc, dis_b_real_resp = self.dis_b.calc_dis_real_loss(xb, lb)
-            real_loss = hp['gan_w'] * (dis_a_real_loss + dis_b_real_loss) * 0.5
-            real_loss.backward(retain_graph=True)
-            # reg loss
-            dis_a_reg_loss = self.dis_a.calc_grad2(dis_a_real_resp, xa)
-            dis_b_reg_loss = self.dis_b.calc_grad2(dis_b_real_resp, xb)
-            reg_loss = 10 * (dis_a_reg_loss + dis_a_reg_loss) * 0.5
-            reg_loss.backward()
+            ################# dis_a #################
+            dis_a_real_loss, dis_a_real_acc, dis_a_real_resp = self.dis_a.calc_dis_real_loss(xa, la) # real loss
+            dis_a_real_loss.backward(retain_graph=True)
+            dis_a_reg_loss = self.dis_a.calc_grad2(dis_a_real_resp, xa) # reg loss
+            dis_a_reg_loss.backward()
+            # fake loss
+            with torch.no_grad():
+                c_xb = self.gen_b.enc_content(xb)
+                s_xa = self.gen_a.enc_class_model(xa)
+                xt_b2a = self.gen_a.decode(c_xb, s_xa)
+            dis_a_fake_loss, dis_a_fake_acc, dis_a_fake_resp = self.dis_a.calc_dis_fake_loss(xt_b2a.detach(), la) 
+            dis_a_fake_loss.backward()
+            ################# dis_b #################
+            dis_b_real_loss, dis_b_real_acc, dis_b_real_resp = self.dis_b.calc_dis_real_loss(xb, lb) # real loss
+            dis_b_real_loss.backward(retain_graph=True)
+            dis_b_reg_loss = self.dis_b.calc_grad2(dis_b_real_resp, xb) #reg loss
+            dis_b_reg_loss.backward()
             # fake loss
             with torch.no_grad():
                 c_xa = self.gen_a.enc_content(xa)
-                c_xb = self.gen_b.enc_content(xb)
-                s_xa = self.gen_a.enc_class_model(xa)
                 s_xb = self.gen_b.enc_class_model(xb)
                 xt_a2b = self.gen_b.decode(c_xa, s_xb)
-                xt_b2a = self.gen_a.decode(c_xb, s_xa)
-            dis_a_fake_loss, dis_a_fake_acc, dis_a_fake_resp = self.dis_a.calc_dis_fake_loss(xt_b2a.detach(), la) 
-            dis_b_fake_loss, dis_b_fake_acc, dis_b_fake_resp = self.dis_b.calc_dis_fake_loss(xt_a2b.detach(), lb) # detach to cut the backward func to G net
-            fake_loss = hp['gan_w'] * (dis_a_fake_loss + dis_b_fake_loss) * 0.5
-            fake_loss.backward()
-            total_loss = fake_loss + real_loss + reg_loss
+            dis_b_fake_loss, dis_b_fake_acc, dis_b_fake_resp = self.dis_b.calc_dis_fake_loss(xt_a2b.detach(), lb)
+            dis_b_fake_loss.backward()
+
+            real_loss = (dis_a_real_loss + dis_b_real_loss)
+            fake_loss = (dis_a_fake_loss + dis_b_fake_loss)
+            reg_loss = (dis_a_reg_loss + dis_b_reg_loss)
+            total_loss = (dis_a_fake_loss + dis_b_fake_loss + dis_a_real_loss + dis_b_real_loss + dis_a_reg_loss + dis_b_reg_loss)
             acc = 0.25 * (dis_a_fake_acc + dis_b_fake_acc + dis_a_real_acc + dis_b_real_acc)
-            print("Dis:[fake_loss:%.2f" % fake_loss.item(),"real_loss:%.2f" % real_loss.item(),"reg_loss:%.2f]" % reg_loss.item())
+            # print("Dis:[fake_loss:%.2f" % fake_loss.item(),"real_loss:%.2f" % real_loss.item(),"reg_loss:%.2f]" % reg_loss.item())
             return total_loss, fake_loss, real_loss, reg_loss, acc
         else:
             assert 0, 'Not support operation'
 
     def test(self, co_data, cl_data):
         self.eval()
-        self.gen_a.eval()
-        self.gen_b.eval()
-        self.gen_test_a.eval()
-        self.gen_test_b.eval()
+        # self.gen_a.eval()
+        # self.gen_b.eval()
+        # self.gen_test_a.eval()
+        # self.gen_test_b.eval()
         xa = co_data[0].cuda()
         xb = cl_data[0].cuda()
 
