@@ -43,13 +43,13 @@ class GPPatchMcResDis(nn.Module):
                              pad_type='reflect',
                              norm='none',
                              activation='none')] # 第一个卷积层提取特征，输出batchsize*128*128*64维度向量
-        for i in range(self.n_layers - 1):
-            nf_out = np.min([nf * 2, 1024]) # 128->256->512->1024
+        for i in range(self.n_layers - 1):# 128->256->512->1024,输出batchsize*8*8*1024维度向量，在原论文条件下
+            nf_out = np.min([nf * 2, 1024]) 
             cnn_f += [ActFirstResBlock(nf, nf, None, 'lrelu', 'none')]
             cnn_f += [ActFirstResBlock(nf, nf_out, None, 'lrelu', 'none')]
             cnn_f += [nn.ReflectionPad2d(1)]
             cnn_f += [nn.AvgPool2d(kernel_size=3, stride=2)]
-            nf = np.min([nf * 2, 1024]) # 128->256->512->1024
+            nf = np.min([nf * 2, 1024]) 
         nf_out = np.min([nf * 2, 1024]) # 1024
         cnn_f += [ActFirstResBlock(nf, nf, None, 'lrelu', 'none')]
         cnn_f += [ActFirstResBlock(nf, nf_out, None, 'lrelu', 'none')] # 再经过两个ResBlock,得到1024深度

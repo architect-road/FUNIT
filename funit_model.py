@@ -45,7 +45,9 @@ class FUNITModel(nn.Module):
             xt_b2a = self.gen_a.decode(c_xb, s_xa)
             # recode
             c_xt_a2b = self.gen_b.enc_content(xt_a2b)
-            c_xt_b2a =  self.gen_a.enc_content(xt_b2a)
+            c_xt_b2a = self.gen_a.enc_content(xt_b2a)
+            s_xt_a2b = self.gen_b.enc_class_model(xt_a2b)
+            s_xt_b2a = self.gen_a.enc_class_model(xt_b2a)
 
             ############ caculate loss ############
             # gan loss
@@ -53,8 +55,8 @@ class FUNITModel(nn.Module):
             xt_b2a_gan_loss, xt_b2a_gan_acc, xt_b2a_gan_feat = self.dis_a.calc_gan_loss(xt_b2a, la)
             xr_a_gan_loss, xr_a_gan_acc, xr_a_gan_feat = self.dis_a.calc_gan_loss(xr_a, la)
             xr_b_gan_loss, xr_b_gan_acc, xr_b_gan_feat = self.dis_b.calc_gan_loss(xr_b, lb)
-            gan_loss = (xt_a2b_gan_loss + xt_b2a_gan_loss)
-            # gan_loss = (xt_a2b_gan_loss + xt_b2a_gan_loss + xr_a_gan_loss + xr_b_gan_loss)
+            # gan_loss = (xt_a2b_gan_loss + xt_b2a_gan_loss)
+            gan_loss = (xt_a2b_gan_loss + xt_b2a_gan_loss + xr_a_gan_loss + xr_b_gan_loss)
             # feature loss
             _, xb_gan_feat = self.dis_b(xb, lb)
             _, xa_gan_feat = self.dis_a(xa, la)
@@ -62,7 +64,7 @@ class FUNITModel(nn.Module):
                 recon_criterion(xr_b_gan_feat.mean(3).mean(2),xb_gan_feat.mean(3).mean(2))
             xt_feat_loss = recon_criterion(xt_b2a_gan_feat.mean(3).mean(2),xa_gan_feat.mean(3).mean(2)) + \
                 recon_criterion(xt_a2b_gan_feat.mean(3).mean(2),xb_gan_feat.mean(3).mean(2))
-            feat_loss = (xr_feat_loss + xt_feat_loss)
+            feat_loss = xt_feat_loss + xr_feat_loss
             # reconstruction loss
             xa_rec_loss = recon_criterion(xr_a, xa)
             xb_rec_loss = recon_criterion(xr_b, xb)
@@ -71,12 +73,16 @@ class FUNITModel(nn.Module):
             content_a2b_loss = recon_criterion(c_xa,c_xt_a2b)
             content_b2a_loss = recon_criterion(c_xb,c_xt_b2a)
             content_loss = (content_a2b_loss + content_b2a_loss)
+            # style loss
+            style_a2b_loss = recon_criterion(s_xb, s_xt_a2b)
+            style_b2a_loss = recon_criterion(s_xa, s_xt_b2a)
+            style_loss = (style_a2b_loss + style_b2a_loss)
             # total loss
-            total_loss = hp['gan_w'] * gan_loss + hp['r_w'] * rec_loss + hp['fm_w'] * feat_loss + hp['c_w'] * content_loss
+            total_loss = hp['gan_w'] * gan_loss + hp['r_w'] * rec_loss + hp['fm_w'] * feat_loss + hp['c_w'] * content_loss + hp['s_w'] * style_loss
             total_loss.backward()
             acc = 0.5 * (xt_a2b_gan_acc + xt_b2a_gan_acc) # the accuracy of fake image recognition
             # print("gen:[gan_loss:%.2f" % gan_loss.item(),"feat_loss:%.2f" % feat_loss.item(),"rec_loss:%.2f" % rec_loss.item(),"content_loss:%.2f]" % content_loss.item())
-            return total_loss, gan_loss, feat_loss, rec_loss, content_loss, acc
+            return total_loss, gan_loss, feat_loss, rec_loss, content_loss, style_loss, acc
         elif mode == 'dis_update':
             xb.requires_grad_()
             xa.requires_grad_()

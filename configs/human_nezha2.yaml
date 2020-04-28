@@ -18,6 +18,7 @@ gan_w: 1                      # weight of adversarial loss for image translation
 fm_w: 1                       # weight on distance between gan features of style and translated image
 r_w: 10                       # weight of image reconstruction loss
 c_w: 1                        # weight of content loss 
+s_w: 0                        # weight of style loss
 
 # model options
 gen_a:
@@ -38,11 +39,11 @@ gen_b:
   n_downs_class: 4            # number of downsampling layers in class model encoder
 dis_a:
   nf: 64                      # base number of filters
-  n_res_blks: 10              # number of residual blocks in the discriminator
+  n_res_blks: 8              # number of residual blocks in the discriminator
   num_classes: 12             # number of classes in the training A set
 dis_b:
   nf: 64                      # base number of filters
-  n_res_blks: 10              # number of residual blocks in the discriminator
+  n_res_blks: 8              # number of residual blocks in the discriminator
   num_classes: 7             # number of classes in the training B set
 
 
