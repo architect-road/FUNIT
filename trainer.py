@@ -52,9 +52,9 @@ class Trainer(nn.Module):
         self.loss_gen_total = torch.mean(total_loss)
         self.loss_gen_recon_x = torch.mean(rec_loss)
         self.loss_gen_recon_c = torch.mean(content_loss)
-        self.loss_gen_recon_s = torch.mean(feat_loss)
+        self.loss_gen_recon_s = torch.mean(style_loss)
+        self.loss_gen_feat = torch.mean(feat_loss)
         self.loss_gen_adv = torch.mean(gan_loss)
-        self.loss_gen_style = torch.mean(style_loss)
         self.accuracy_gen_adv = torch.mean(acc)
         self.gen_opt.step()
         this_model = self.model.module if multigpus else self.model

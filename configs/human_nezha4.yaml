@@ -2,6 +2,8 @@
 # Licensed under the CC BY-NC-SA 4.0 license
 # (https://creativecommons.org/licenses/by-nc-sa/4.0/legalcode).
 
+# 降低lr为0.00001，reconstruction loss 保持0.1，降低dis的res_blks为8层
+
 # logger options
 image_save_iter: 2500         # How often do you want to save output images during training
 image_display_iter: 100       # How often do you want to display output images during training
@@ -11,12 +13,12 @@ log_iter: 1                   # How often do you want to log the training stats
 # optimization options
 max_iter: 100000              # maximum number of training iterations
 weight_decay: 0.0001          # weight decay
-lr_gen: 0.0001                # learning rate for the generator
-lr_dis: 0.0001                # learning rate for the discriminator
+lr_gen: 0.00001                # learning rate for the generator
+lr_dis: 0.00001                # learning rate for the discriminator
 init: kaiming                 # initialization [gaussian/kaiming/xavier/orthogonal]
 gan_w: 1                      # weight of adversarial loss for image translation
 fm_w: 1                       # weight on distance between gan features of style and translated image
-r_w: 10                       # weight of image reconstruction loss
+r_w: 0.1                       # weight of image reconstruction loss
 c_w: 1                        # weight of content loss 
 s_w: 0                        # weight of style loss
 
@@ -39,11 +41,11 @@ gen_b:
   n_downs_class: 4            # number of downsampling layers in class model encoder
 dis_a:
   nf: 64                      # base number of filters
-  n_res_blks: 10              # number of residual blocks in the discriminator
+  n_res_blks: 8              # number of residual blocks in the discriminator
   num_classes: 12             # number of classes in the training A set
 dis_b:
   nf: 64                      # base number of filters
-  n_res_blks: 10              # number of residual blocks in the discriminator
+  n_res_blks: 8              # number of residual blocks in the discriminator
   num_classes: 7             # number of classes in the training B set
 
 
@@ -63,3 +65,5 @@ data_list_class_train: /data1/chenyinpeng/data/human_nezha_sep/train_class.txt
 data_list_class_test: /data1/chenyinpeng/data/human_nezha_sep/test_class.txt
 data_list_content_train: /data1/chenyinpeng/data/human_nezha_sep/train_content.txt
 data_list_content_test: /data1/chenyinpeng/data/human_nezha_sep/test_content.txt
+
+# use 10 resblks back and decrease r_w to 0.1

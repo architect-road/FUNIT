@@ -21,7 +21,7 @@ class FUNITModel(nn.Module):
         self.gen_a = FewShotGen(hp['gen_a']) # human domain Generator
         self.gen_b = FewShotGen(hp['gen_b']) # anime domain Generator
         self.dis_a = GPPatchMcResDis(hp['dis_a']) # human domain Discriminator
-        self.dis_b = GPPatchMcResDis(hp['dis_b']) # anime domain Discriminator        
+        self.dis_b = GPPatchMcResDis(hp['dis_b']) # anime domain Discriminator
 
         self.gen_test_a = copy.deepcopy(self.gen_a)
         self.gen_test_b = copy.deepcopy(self.gen_b)
@@ -55,8 +55,7 @@ class FUNITModel(nn.Module):
             xt_b2a_gan_loss, xt_b2a_gan_acc, xt_b2a_gan_feat = self.dis_a.calc_gan_loss(xt_b2a, la)
             xr_a_gan_loss, xr_a_gan_acc, xr_a_gan_feat = self.dis_a.calc_gan_loss(xr_a, la)
             xr_b_gan_loss, xr_b_gan_acc, xr_b_gan_feat = self.dis_b.calc_gan_loss(xr_b, lb)
-            # gan_loss = (xt_a2b_gan_loss + xt_b2a_gan_loss)
-            gan_loss = (xt_a2b_gan_loss + xt_b2a_gan_loss + xr_a_gan_loss + xr_b_gan_loss)
+            gan_loss = (xt_a2b_gan_loss + xt_b2a_gan_loss + xr_a_gan_loss + xr_b_gan_loss) * 0.5
             # feature loss
             _, xb_gan_feat = self.dis_b(xb, lb)
             _, xa_gan_feat = self.dis_a(xa, la)
@@ -81,7 +80,6 @@ class FUNITModel(nn.Module):
             total_loss = hp['gan_w'] * gan_loss + hp['r_w'] * rec_loss + hp['fm_w'] * feat_loss + hp['c_w'] * content_loss + hp['s_w'] * style_loss
             total_loss.backward()
             acc = 0.5 * (xt_a2b_gan_acc + xt_b2a_gan_acc) # the accuracy of fake image recognition
-            # print("gen:[gan_loss:%.2f" % gan_loss.item(),"feat_loss:%.2f" % feat_loss.item(),"rec_loss:%.2f" % rec_loss.item(),"content_loss:%.2f]" % content_loss.item())
             return total_loss, gan_loss, feat_loss, rec_loss, content_loss, style_loss, acc
         elif mode == 'dis_update':
             xb.requires_grad_()
@@ -94,9 +92,13 @@ class FUNITModel(nn.Module):
             # fake loss
             with torch.no_grad():
                 c_xb = self.gen_b.enc_content(xb)
+                c_xa = self.gen_a.enc_content(xa)
                 s_xa = self.gen_a.enc_class_model(xa)
+                xr_a = self.gen_a.decode(c_xa, s_xa)
                 xt_b2a = self.gen_a.decode(c_xb, s_xa)
-            dis_a_fake_loss, dis_a_fake_acc, dis_a_fake_resp = self.dis_a.calc_dis_fake_loss(xt_b2a.detach(), la) 
+            dis_at_fake_loss, dis_at_fake_acc, dis_at_fake_resp = self.dis_a.calc_dis_fake_loss(xt_b2a.detach(), la)
+            dis_ar_fake_loss, dis_ar_fake_acc, dis_ar_fake_resp = self.dis_a.calc_dis_fake_loss(xr_a.detach(), la)
+            dis_a_fake_loss = (dis_at_fake_loss + dis_ar_fake_loss) * 0.5
             dis_a_fake_loss.backward()
             ################# dis_b #################
             dis_b_real_loss, dis_b_real_acc, dis_b_real_resp = self.dis_b.calc_dis_real_loss(xb, lb) # real loss
@@ -106,16 +108,20 @@ class FUNITModel(nn.Module):
             # fake loss
             with torch.no_grad():
                 c_xa = self.gen_a.enc_content(xa)
+                c_xb = self.gen_b.enc_content(xb)
                 s_xb = self.gen_b.enc_class_model(xb)
+                xr_b = self.gen_b.decode(c_xb, s_xb)
                 xt_a2b = self.gen_b.decode(c_xa, s_xb)
-            dis_b_fake_loss, dis_b_fake_acc, dis_b_fake_resp = self.dis_b.calc_dis_fake_loss(xt_a2b.detach(), lb)
+            dis_bt_fake_loss, dis_bt_fake_acc, dis_bt_fake_resp = self.dis_b.calc_dis_fake_loss(xt_a2b.detach(), lb)
+            dis_br_fake_loss, dis_br_fake_acc, dis_br_fake_resp = self.dis_b.calc_dis_fake_loss(xr_b.detach(), lb)
+            dis_b_fake_loss = (dis_bt_fake_loss + dis_br_fake_loss) * 0.5
             dis_b_fake_loss.backward()
 
             real_loss = (dis_a_real_loss + dis_b_real_loss)
             fake_loss = (dis_a_fake_loss + dis_b_fake_loss)
             reg_loss = (dis_a_reg_loss + dis_b_reg_loss)
             total_loss = (dis_a_fake_loss + dis_b_fake_loss + dis_a_real_loss + dis_b_real_loss + dis_a_reg_loss + dis_b_reg_loss)
-            acc = 0.25 * (dis_a_fake_acc + dis_b_fake_acc + dis_a_real_acc + dis_b_real_acc)
+            acc = 0.25 * (dis_at_fake_acc + dis_bt_fake_acc + dis_a_real_acc + dis_b_real_acc)
             # print("Dis:[fake_loss:%.2f" % fake_loss.item(),"real_loss:%.2f" % real_loss.item(),"reg_loss:%.2f]" % reg_loss.item())
             return total_loss, fake_loss, real_loss, reg_loss, acc
         else:
