@@ -2,6 +2,9 @@
 # Licensed under the CC BY-NC-SA 4.0 license
 # (https://creativecommons.org/licenses/by-nc-sa/4.0/legalcode).
 
+# 恢复dis的res_blks为10层,将重建图片也作为假图片送入判别器指导判别器的学习,加入style loss
+
+mode: B
 # logger options
 image_save_iter: 2500         # How often do you want to save output images during training
 image_display_iter: 100       # How often do you want to display output images during training
@@ -44,7 +47,7 @@ dis_a:
 dis_b:
   nf: 64                      # base number of filters
   n_res_blks: 10              # number of residual blocks in the discriminator
-  num_classes: 8             # number of classes in the training B set
+  num_classes: 7             # number of classes in the training B set
 
 
 # data options
@@ -54,12 +57,12 @@ new_size: 140                 # first resize the shortest image side to this siz
 crop_image_height: 128        # random crop image of this height
 crop_image_width: 128         # random crop image of this width
 
-root_class_train: /data1/chenyinpeng/data/faceScrub_Danbooru/trainB
-root_content_train: /data1/chenyinpeng/data/faceScrub_Danbooru/trainA
-root_class_test: /data1/chenyinpeng/faceScrub_Danbooru/testB
-root_content_test: /data1/chenyinpeng/faceScrub_Danbooru/testA
+root_class_train: /data1/chenyinpeng/data/human_nezha_sep/class/train
+root_content_train: /data1/chenyinpeng/data/human_nezha_sep/content/train
+root_class_test: /data1/chenyinpeng/data/human_nezha_sep/class/test
+root_content_test: /data1/chenyinpeng/data/human_nezha_sep/content/test
 
-data_list_class_train: /data1/chenyinpeng/data/faceScrub_Danbooru/trainB.txt 
-data_list_class_test: /data1/chenyinpeng/data/faceScrub_Danbooru/testB.txt
-data_list_content_train: /data1/chenyinpeng/data/faceScrub_Danbooru/trainA.txt
-data_list_content_test: /data1/chenyinpeng/data/faceScrub_Danbooru/testA.txt
+data_list_class_train: /data1/chenyinpeng/data/human_nezha_sep/train_class.txt
+data_list_class_test: /data1/chenyinpeng/data/human_nezha_sep/test_class.txt
+data_list_content_train: /data1/chenyinpeng/data/human_nezha_sep/train_content.txt
+data_list_content_test: /data1/chenyinpeng/data/human_nezha_sep/test_content.txt

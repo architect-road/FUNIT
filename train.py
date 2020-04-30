@@ -22,7 +22,7 @@ cudnn.benchmark = True
 parser = argparse.ArgumentParser()
 parser.add_argument('--config',
                     type=str,
-                    default='configs/human_nezha6.yaml',
+                    default='configs/r10c1s0_B.yaml',
                     help='configuration file for training and testing')
 parser.add_argument('--output_path',
                     type=str,

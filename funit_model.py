@@ -55,7 +55,10 @@ class FUNITModel(nn.Module):
             xt_b2a_gan_loss, xt_b2a_gan_acc, xt_b2a_gan_feat = self.dis_a.calc_gan_loss(xt_b2a, la)
             xr_a_gan_loss, xr_a_gan_acc, xr_a_gan_feat = self.dis_a.calc_gan_loss(xr_a, la)
             xr_b_gan_loss, xr_b_gan_acc, xr_b_gan_feat = self.dis_b.calc_gan_loss(xr_b, lb)
-            gan_loss = (xt_a2b_gan_loss + xt_b2a_gan_loss + xr_a_gan_loss + xr_b_gan_loss) * 0.5
+            if hp['mode'] == 'B':
+                gan_loss = (xt_a2b_gan_loss + xt_b2a_gan_loss + xr_a_gan_loss + xr_b_gan_loss) * 0.5
+            else:
+                gan_loss = xt_a2b_gan_loss + xt_b2a_gan_loss
             # feature loss
             _, xb_gan_feat = self.dis_b(xb, lb)
             _, xa_gan_feat = self.dis_a(xa, la)
@@ -63,7 +66,10 @@ class FUNITModel(nn.Module):
                 recon_criterion(xr_b_gan_feat.mean(3).mean(2),xb_gan_feat.mean(3).mean(2))
             xt_feat_loss = recon_criterion(xt_b2a_gan_feat.mean(3).mean(2),xa_gan_feat.mean(3).mean(2)) + \
                 recon_criterion(xt_a2b_gan_feat.mean(3).mean(2),xb_gan_feat.mean(3).mean(2))
-            feat_loss = xt_feat_loss + xr_feat_loss
+            if hp['mode'] == 'B':
+                feat_loss = xt_feat_loss + xr_feat_loss
+            else:
+                feat_loss = xt_feat_loss
             # reconstruction loss
             xa_rec_loss = recon_criterion(xr_a, xa)
             xb_rec_loss = recon_criterion(xr_b, xb)
@@ -86,8 +92,9 @@ class FUNITModel(nn.Module):
             xa.requires_grad_()
             ################# dis_a #################
             dis_a_real_loss, dis_a_real_acc, dis_a_real_resp = self.dis_a.calc_dis_real_loss(xa, la) # real loss
+            dis_a_real_loss = hp['gan_w'] * dis_a_real_loss
             dis_a_real_loss.backward(retain_graph=True)
-            dis_a_reg_loss = self.dis_a.calc_grad2(dis_a_real_resp, xa) # reg loss
+            dis_a_reg_loss = 10 * self.dis_a.calc_grad2(dis_a_real_resp, xa) # reg loss
             dis_a_reg_loss.backward()
             # fake loss
             with torch.no_grad():
@@ -98,12 +105,15 @@ class FUNITModel(nn.Module):
                 xt_b2a = self.gen_a.decode(c_xb, s_xa)
             dis_at_fake_loss, dis_at_fake_acc, dis_at_fake_resp = self.dis_a.calc_dis_fake_loss(xt_b2a.detach(), la)
             dis_ar_fake_loss, dis_ar_fake_acc, dis_ar_fake_resp = self.dis_a.calc_dis_fake_loss(xr_a.detach(), la)
-            dis_a_fake_loss = (dis_at_fake_loss + dis_ar_fake_loss) * 0.5
+            if hp['mode'] == 'B':
+                dis_a_fake_loss = hp['gan_w'] * (dis_at_fake_loss + dis_ar_fake_loss) * 0.5
+            else:
+                dis_a_fake_loss = hp['gan_w'] * dis_at_fake_loss
             dis_a_fake_loss.backward()
             ################# dis_b #################
             dis_b_real_loss, dis_b_real_acc, dis_b_real_resp = self.dis_b.calc_dis_real_loss(xb, lb) # real loss
             dis_b_real_loss.backward(retain_graph=True)
-            dis_b_reg_loss = self.dis_b.calc_grad2(dis_b_real_resp, xb) #reg loss
+            dis_b_reg_loss = 10 * self.dis_b.calc_grad2(dis_b_real_resp, xb) #reg loss
             dis_b_reg_loss.backward()
             # fake loss
             with torch.no_grad():
@@ -114,7 +124,10 @@ class FUNITModel(nn.Module):
                 xt_a2b = self.gen_b.decode(c_xa, s_xb)
             dis_bt_fake_loss, dis_bt_fake_acc, dis_bt_fake_resp = self.dis_b.calc_dis_fake_loss(xt_a2b.detach(), lb)
             dis_br_fake_loss, dis_br_fake_acc, dis_br_fake_resp = self.dis_b.calc_dis_fake_loss(xr_b.detach(), lb)
-            dis_b_fake_loss = (dis_bt_fake_loss + dis_br_fake_loss) * 0.5
+            if hp['mode'] == 'B':
+                dis_b_fake_loss = hp['gan_w'] * (dis_bt_fake_loss + dis_br_fake_loss) * 0.5
+            else:
+                dis_b_fake_loss = hp['gan_w'] * dis_bt_fake_loss
             dis_b_fake_loss.backward()
 
             real_loss = (dis_a_real_loss + dis_b_real_loss)
