@@ -46,7 +46,7 @@ def loader_from_list(
         transform_list = [transforms.RandomCrop((height, width))] + \
                          transform_list if crop else transform_list
     # 先将图片转换为140*140，再随机挑出128*128
-    transform_list = [transforms.Resize(new_size,new_size)] + transform_list \
+    transform_list = [transforms.Resize((new_size,new_size))] + transform_list \
         if new_size is not None else transform_list
     if not center_crop: # 以一定概率水平翻转
         transform_list = [transforms.RandomHorizontalFlip()] + transform_list
